@@ -1,7 +1,16 @@
 package com.example.smarthelmet;
 
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -16,10 +25,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
+    Context c = this;
+    NotificationManager manager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        checkPerim();
+
+        manager = getSystemService(NotificationManager.class);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel("ch1","Location channel", NotificationManager.IMPORTANCE_HIGH);
+            manager.createNotificationChannel(channel);
+        }
+
+        MyReceiver receiver = new MyReceiver();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.setPriority(2147483647);
+        intentFilter.addAction("android.provider.Telephony.SMS_RECEIVED");
+        registerReceiver(receiver, intentFilter);
 
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -47,5 +72,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    }
+
+
+    void checkPerim(){
+
+       int loc = ActivityCompat.checkSelfPermission(c, Manifest.permission.ACCESS_FINE_LOCATION);
+       int readSms = ActivityCompat.checkSelfPermission(c,Manifest.permission.READ_SMS);
+       int smsRec= ActivityCompat.checkSelfPermission(c,Manifest.permission.RECEIVE_SMS);
+
+       if (loc != PackageManager.PERMISSION_GRANTED || readSms != PackageManager.PERMISSION_GRANTED || smsRec != PackageManager.PERMISSION_GRANTED){
+           ActivityCompat.requestPermissions(MapsActivity.this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.READ_SMS,Manifest.permission.RECEIVE_SMS},101);
+       }
+
     }
 }
